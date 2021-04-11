@@ -1,18 +1,18 @@
-include("Params.jl")
+include("ModelDiscrete.jl")
 
 # Chase Abram
 # For solving HA discrete-time models via endogenous grid point
 
 
-function solve_EGP(p)
+function solve_EGP(m)
 
     # @unpack_Params p
     # unpack other structs also?
 
     # Guess cons
-    con_old = p.r .* p.aagrid + p.yyFgrid + p.yyPgrid + p.yyTgrid
-    # con_old = ones(size(p.aagrid))
-    p.con = con_old
+    con_old = m.r .* m.aagrid + m.yyFgrid + m.yyPgrid + m.yyTgrid
+    # con_old = ones(size(m.aagrid))
+    m.con = con_old
 
     # Initialize iteration trackers
     egp_iter = 0
@@ -20,56 +20,56 @@ function solve_EGP(p)
 
     println("Entering Loop...")
     # Run until convergence or out of iterations
-    while egp_iter < p.egp_maxiter && egp_diff > p.egp_tol
+    while egp_iter < m.egp_maxiter && egp_diff > m.egp_tol
 
         # Update each object in the param
 
         # u'(c)
-        up(p)
-        # println("it: ", egp_iter, ", var(p.up): ", var(p.up))
+        up(m)
+        # println("it: ", egp_iter, ", var(m.up): ", var(m.up))
 
         # Expected marginal utility
-        emuc(p)
-        # println("it: ", egp_iter, ", var(p.emuc): ", var(p.emuc))
+        emuc(m)
+        # println("it: ", egp_iter, ", var(m.emuc): ", var(m.emuc))
 
         # Marginal utility
-        muc(p)
-        # println("it: ", egp_iter, ", var(p.muc): ", var(p.muc))
+        muc(m)
+        # println("it: ", egp_iter, ", var(m.muc): ", var(m.muc))
 
         # Update forward looking consumption
-        update_con_euler(p)
-        # println("it: ", egp_iter, ", var(p.con_euler): ", var(p.con_euler))
+        update_con_euler(m)
+        # println("it: ", egp_iter, ", var(m.con_euler): ", var(m.con_euler))
 
         # Update forward looking assets
-        update_a_euler(p)
-        # println("it: ", egp_iter, ", var(p.a_euler): ", var(p.a_euler))
+        update_a_euler(m)
+        # println("it: ", egp_iter, ", var(m.a_euler): ", var(m.a_euler))
 
         # Interpolate/invert to get implied asset choice
-        interp_a_tom(p)
-        # println("it: ", egp_iter, ", var(p.a_tom): ", var(p.a_tom))
+        interp_a_tom(m)
+        # println("it: ", egp_iter, ", var(m.a_tom): ", var(m.a_tom))
 
         # Implied consumption choice
-        update_con(p)
-        # println("it: ", egp_iter, ", var(p.con): ", var(p.con))
+        update_con(m)
+        # println("it: ", egp_iter, ", var(m.con): ", var(m.con))
 
         
         # Check diff
-        egp_diff = maximum(abs.(p.con - con_old))
+        egp_diff = maximum(abs.(m.con - con_old))
         
         # Update
-        con_old .= p.con
+        con_old .= m.con
         egp_iter += 1
 
         # Add some print statements for progress here
         println("iter: ", egp_iter)
         println("    diff: ", egp_diff)
         
-        # c_plot = plot(p.agrid, p.con[:,1,1,1,1],
+        # c_plot = plot(m.agrid, m.con[:,1,1,1,1],
         # xlabel = "a", ylabel = "c", title = "Consumption",
         # legend = false,)
         # display(c_plot)
 
-        # a_plot = plot(p.agrid, p.a_tom[:,1,1,1,1],
+        # a_plot = plot(m.agrid, m.a_tom[:,1,1,1,1],
         # xlabel = "a", ylabel = "a'", title = "Assets tomorrow",
         # legend = false,)
         # display(a_plot)
@@ -79,21 +79,21 @@ function solve_EGP(p)
 end
 
 
-p0 = Params()
-setup_income(p0)
-# println("sum(p0.income_trans): ", sum(p0.income_trans))
-# println("size(p0.income_trans): ", size(p0.income_trans))
-# println("size(p0.income_trans[1,1,1,1,1]): ", size(p0.income_trans[1,1,1,1,1]))
-# println("con_old: ", p0.con)
-solve_EGP(p0)
-# println(p0.con)
+m0 = ModelDiscrete()
+setup_income(m0)
+# println("sum(m0.income_trans): ", sum(m0.income_trans))
+# println("size(m0.income_trans): ", size(m0.income_trans))
+# println("size(m0.income_trans[1,1,1,1,1]): ", size(m0.income_trans[1,1,1,1,1]))
+# println("con_old: ", m0.con)
+solve_EGP(m0)
+# println(m0.con)
 
-c_plot = plot(p0.agrid, p0.con[:,1,1,1,1],
+c_plot = plot(m0.agrid, m0.con[:,1,1,1,1],
 xlabel = "a", ylabel = "c", title = "Consumption",
 legend = false,)
 display(c_plot)
 
-a_plot = plot(p0.agrid, p0.a_tom[:,1,1,1,1],
+a_plot = plot(m0.agrid, m0.a_tom[:,1,1,1,1],
 xlabel = "a", ylabel = "a'", title = "Assets tomorrow",
 legend = false,)
 display(a_plot)

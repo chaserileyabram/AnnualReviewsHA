@@ -14,7 +14,7 @@ using Statistics
 
 # Structure to hold all parameters and the setup functions of the problem
 
-@with_kw mutable struct Params
+@with_kw mutable struct ModelDiscrete
 
     # Discount factor
     beta0 = 0.9
@@ -94,26 +94,26 @@ using Statistics
 end
 
 # Marginal utility
-function up(p)
+function up(m)
     # println("up called")
-    if p.crra == 1
-        p.up = p.con.^(-p.gamma)
+    if m.crra == 1
+        m.up = m.con.^(-m.gamma)
     else
         # Do Epstein-Zin
-        p.up = NaN
+        m.up = NaN
     end
 end
 
 
 # Expected MUC
-function emuc(p)
+function emuc(m)
     # Should add threading
-    for a in 1:p.na
-        for yF in 1:p.nyF
-            for yP in 1:p.nyP
-                for yT in 1:p.nyT
-                    for z in 1:p.nz
-                        p.emuc[a,yF,yP,yT,z] = sum(p.up .* p.income_trans[a,yF,yP,yT,z])
+    for a in 1:m.na
+        for yF in 1:m.nyF
+            for yP in 1:m.nyP
+                for yT in 1:m.nyT
+                    for z in 1:m.nz
+                        m.emuc[a,yF,yP,yT,z] = sum(m.up .* m.income_trans[a,yF,yP,yT,z])
                     end
                 end
             end
@@ -121,68 +121,68 @@ function emuc(p)
     end
 end
 
-function muc(p)
-    p.muc = p.beta0 .* p.R .* p.emuc
+function muc(m)
+    m.muc = m.beta0 .* m.R .* m.emuc
 end
 
 # function upinv(p)
-#     if p.crra == 1
-#         p.upinv = p.muc.^(-1/p.gamma)
+#     if m.crra == 1
+#         m.upinv = m.muc.^(-1/m.gamma)
 #     else
-#         p.upinv = NaN
+#         m.upinv = NaN
 #     end
 # end
 
-function update_con_euler(p)
-    if p.crra == 1
-        p.con_euler = p.muc.^(-1/p.gamma)
+function update_con_euler(m)
+    if m.crra == 1
+        m.con_euler = m.muc.^(-1/m.gamma)
     else
-        p.con_euler = NaN
+        m.con_euler = NaN
     end
 end
 
-function update_a_euler(p)
-    p.a_euler = (p.con_euler + p.aagrid - p.yyFgrid - p.yyPgrid - p.yyTgrid)/p.R
+function update_a_euler(m)
+    m.a_euler = (m.con_euler + m.aagrid - m.yyFgrid - m.yyPgrid - m.yyTgrid)/m.R
 end
 
-function interp_a_tom(p)
-    for yF in 1:p.nyF
-        for yP in 1:p.nyP
-            for yT in 1:p.nyT
-                for z in 1:p.nz
+function interp_a_tom(m)
+    for yF in 1:m.nyF
+        for yP in 1:m.nyP
+            for yT in 1:m.nyT
+                for z in 1:m.nz
 
-                    p.borrow_constr = (p.agrid .< p.a_euler[1,yF,yP,yT,z])
+                    m.borrow_constr = (m.agrid .< m.a_euler[1,yF,yP,yT,z])
 
-                    p.tmp_itp = interpolate((p.a_euler[:,yF,yP,yT,z],), p.agrid, Gridded(Linear()))
+                    m.tmp_itp = interpolate((m.a_euler[:,yF,yP,yT,z],), m.agrid, Gridded(Linear()))
 
-                    p.a_tom[:,yF,yP,yT,z] = (1 .- p.borrow_constr) .* extrapolate(p.tmp_itp, Line()).(p.agrid) .+ p.borrow_constr .* p.agrid[1]
+                    m.a_tom[:,yF,yP,yT,z] = (1 .- m.borrow_constr) .* extrapolate(m.tmp_itp, Line()).(m.agrid) .+ m.borrow_constr .* m.agrid[1]
 
-                    # p.a_tom[:,yF,yP,yT,z] = (p.a_tom[:,yF,yP,yT,z] .>= p.a_bc) .* p.a_tom[:,yF,yP,yT,z] .+ (p.a_tom[:,yF,yP,yT,z] .< p.a_bc) .* p.agrid[1]
+                    # m.a_tom[:,yF,yP,yT,z] = (m.a_tom[:,yF,yP,yT,z] .>= m.a_bc) .* m.a_tom[:,yF,yP,yT,z] .+ (m.a_tom[:,yF,yP,yT,z] .< m.a_bc) .* m.agrid[1]
 
-                    # p.a_tom[:,yF,yP,yT,z] = p.borrow_constr .* extrapolate(p.tmp_itp, Line()).(p.agrid) .+ (1 .- p.borrow_constr) .* p.agrid[1]
+                    # m.a_tom[:,yF,yP,yT,z] = m.borrow_constr .* extrapolate(m.tmp_itp, Line()).(m.agrid) .+ (1 .- m.borrow_constr) .* m.agrid[1]
                 end
             end
         end
     end
 end
 
-function update_con(p)
-    p.con = p.R*p.aagrid + p.yyFgrid + p.yyPgrid + p.yyTgrid - p.a_tom
+function update_con(m)
+    m.con = m.R*m.aagrid + m.yyFgrid + m.yyPgrid + m.yyTgrid - m.a_tom
 end
 
 
-function setup_income(p)
-    p.income_trans *= 0.0
+function setup_income(m)
+    m.income_trans *= 0.0
     # Add threading?
-    for a in 1:p.na
-        for yF in 1:p.nyF
-            for yP in 1:p.nyP
-                for yT in 1:p.nyT
-                    for z in 1:p.nz
-                        for a2 in 1:p.na
+    for a in 1:m.na
+        for yF in 1:m.nyF
+            for yP in 1:m.nyP
+                for yT in 1:m.nyT
+                    for z in 1:m.nz
+                        for a2 in 1:m.na
                             if a == a2
-                                # println("size(ones(yF,yP,yT,z)./sum(ones(yF,yP,yT,z))): ", size(ones(p.nyF,p.nyP,p.nyT,p.nz)./sum(ones(p.nyF,p.nyP,p.nyT,p.nz))))
-                                p.income_trans[a,yF,yP,yT,z][a2,:,:,:,:] = ones(p.nyF,p.nyP,p.nyT,p.nz)./sum(ones(p.nyF,p.nyP,p.nyT,p.nz))
+                                # println("size(ones(yF,yP,yT,z)./sum(ones(yF,yP,yT,z))): ", size(ones(m.nyF,m.nyP,m.nyT,m.nz)./sum(ones(m.nyF,m.nyP,m.nyT,m.nz))))
+                                m.income_trans[a,yF,yP,yT,z][a2,:,:,:,:] = ones(m.nyF,m.nyP,m.nyT,m.nz)./sum(ones(m.nyF,m.nyP,m.nyT,m.nz))
                             end
                         end
                     end
@@ -196,11 +196,11 @@ end
 
 ##
 
-p0 = Params()
+# p0 = Params()
 # println(p0)
 
 # @unpack na,nyF,nyP,nyT,nz = p0
-# c0 = exp.(randn(na,nyF,nyP,nyT,nz))
+# c0 = exm.(randn(na,nyF,nyP,nyT,nz))
 
 # println("1. maximum(p0.up): ", maximum(p0.up), ", size(p0.up): ", size(p0.up))
 # up(p0, c0[1,1,1,1,1])
@@ -217,8 +217,8 @@ p0 = Params()
 
 # println(p0.agrid)
 
-itp = interpolate(([1, 2, 3],), [4, 5, 6], Gridded(Linear()))
-# itp = interpolate([1 2 3; 4 5 6], BSpline(Linear()))
-itp.([2 2.3 2.4 2.7 3])
-extp = extrapolate(itp, Line())
-extp.([0.5 1 1.5 2 3 3.5])
+# itp = interpolate(([1, 2, 3],), [4, 5, 6], Gridded(Linear()))
+# # itp = interpolate([1 2 3; 4 5 6], BSpline(Linear()))
+# itm.([2 2.3 2.4 2.7 3])
+# extp = extrapolate(itp, Line())
+# extm.([0.5 1 1.5 2 3 3.5])
