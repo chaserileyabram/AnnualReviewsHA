@@ -1,9 +1,14 @@
 using Parameters
-using Random # only for testing
 
 using Pkg
-# Pkg.add("Interpolations")
+# Pkg.add("Statistics")
 using Interpolations
+
+# For testing
+using Random
+using Plots
+using Distributions
+using Statistics
 
 ##
 
@@ -12,7 +17,7 @@ using Interpolations
 @with_kw mutable struct Params
 
     # Discount factor
-    beta0 = 0.95
+    beta0 = 0.9
 
     # Relative Risk Aversion
     gamma = 1.0
@@ -24,19 +29,25 @@ using Interpolations
     R = 1+r
 
     # Build grids
-    na = 5
+    na = 50
     a_bc = 0
     a_max = 200
-    agrid = LinRange(0,na,na) # Needs to be properly built
+    agrid::Array{Float64,1} = LinRange(a_bc,a_max,na).^(0.5) # Needs to be properly built
+
+    # Used as an indicator during EGP (stored here for inplace updating)
+    borrow_constr = zeros(na)
+
+    # Stores interpolator used in EGP
+    tmp_itp = NaN
 
     nyF = 2
-    yFgrid = LinRange(0,nyF,nyF)
-    nyP = 3
-    yPgrid = LinRange(0,nyP,nyP)
-    nyT = 4
-    yTgrid = LinRange(0,nyT,nyT)
+    yFgrid::Array{Float64,1} = LinRange(1.0,1.0,nyF).^(0.5)
+    nyP = 2
+    yPgrid::Array{Float64,1} = LinRange(0,0.1,nyP).^(0.5)
+    nyT = 20
+    yTgrid::Array{Float64,1} = LinRange(0,0.1,nyT).^(0.5)
 
-    nz = 3
+    nz = 2
     zgrid = LinRange(0,nz,nz)
 
     # Build augmented grids (Fix this!)
@@ -50,10 +61,11 @@ using Interpolations
 
     zzgrid = repeat(reshape(zgrid, (1,1,1,1,nz)), na, nyF, nyP, nyT, 1)
 
-
-
     # income transitions (needs to be set up)
-    income_trans = [ones(na,nyF,nyP,nyT,nz)/(na*nyF*nyP*nyT*nz) for a in 1:na, yF in 1:nyF, yP in 1:nyP, yT in 1:nyT, z in 1:nz]
+    income_trans = [zeros(na,nyF,nyP,nyT,nz)/(na*nyF*nyP*nyT*nz) for a in 1:na, yF in 1:nyF, yP in 1:nyP, yT in 1:nyT, z in 1:nz]
+
+    # Consumption as function of assets and income today
+    con = zeros(na,nyF,nyP,nyT,nz)
 
     # Consumption as function of assets tomorrow and income today
     con_euler = zeros(na,nyF,nyP,nyT,nz)
@@ -68,7 +80,7 @@ using Interpolations
     up = zeros(na,nyF,nyP,nyT,nz)
 
     # [u']^{-1}(c)
-    upinv = zeros(na,nyF,nyP,nyT,nz)
+    upinv = zeros(na,nyF,nyP,nyT,nz) # Not needed anymore
 
     # MUC
     muc = zeros(na,nyF,nyP,nyT,nz)
@@ -76,26 +88,19 @@ using Interpolations
     # Expected MUC
     emuc = zeros(na,nyF,nyP,nyT,nz)
 
-    egp_maxiter = 100
+    egp_maxiter = 1000
     egp_tol = 1e-6
 
 end
 
 # Marginal utility
 function up(p)
+    # println("up called")
     if p.crra == 1
         p.up = p.con.^(-p.gamma)
     else
         # Do Epstein-Zin
         p.up = NaN
-    end
-end
-
-function upinv(p)
-    if p.crra == 1
-        p.upinv = p.muc.^(-1/p.gamma)
-    else
-        p.upinv = NaN
     end
 end
 
@@ -106,7 +111,7 @@ function emuc(p)
     for a in 1:p.na
         for yF in 1:p.nyF
             for yP in 1:p.nyP
-                for yT in 1:nyT
+                for yT in 1:p.nyT
                     for z in 1:p.nz
                         p.emuc[a,yF,yP,yT,z] = sum(p.up .* p.income_trans[a,yF,yP,yT,z])
                     end
@@ -117,25 +122,44 @@ function emuc(p)
 end
 
 function muc(p)
-    p.muc = p.beta0*p.R*p.emuc
+    p.muc = p.beta0 .* p.R .* p.emuc
 end
 
+# function upinv(p)
+#     if p.crra == 1
+#         p.upinv = p.muc.^(-1/p.gamma)
+#     else
+#         p.upinv = NaN
+#     end
+# end
+
 function update_con_euler(p)
-    p.con_euler = upinv(p,p.muc)
+    if p.crra == 1
+        p.con_euler = p.muc.^(-1/p.gamma)
+    else
+        p.con_euler = NaN
+    end
 end
 
 function update_a_euler(p)
-    p.a_euler = 1/p.R*(p.con + p.aagrid - p.yyFgrid - p.yyPgrid - p.yyTgrid)
+    p.a_euler = (p.con_euler + p.aagrid - p.yyFgrid - p.yyPgrid - p.yyTgrid)/p.R
 end
 
 function interp_a_tom(p)
-    
     for yF in 1:p.nyF
         for yP in 1:p.nyP
-            for yT in 1:nyT
+            for yT in 1:p.nyT
                 for z in 1:p.nz
-                    borrow_constr = (p.agrid .< p.a_euler[1,yF,yP,yT,z])
-                    p.a_tom[:,yF,yP,yT,z] = borrow_constr .* interpolate(p.a_euler[:,yF,yP,yT,z], p.agrid).(p.agrid) .+ (1 .- borrow_constr) .* agrid[1]
+
+                    p.borrow_constr = (p.agrid .< p.a_euler[1,yF,yP,yT,z])
+
+                    p.tmp_itp = interpolate((p.a_euler[:,yF,yP,yT,z],), p.agrid, Gridded(Linear()))
+
+                    p.a_tom[:,yF,yP,yT,z] = (1 .- p.borrow_constr) .* extrapolate(p.tmp_itp, Line()).(p.agrid) .+ p.borrow_constr .* p.agrid[1]
+
+                    # p.a_tom[:,yF,yP,yT,z] = (p.a_tom[:,yF,yP,yT,z] .>= p.a_bc) .* p.a_tom[:,yF,yP,yT,z] .+ (p.a_tom[:,yF,yP,yT,z] .< p.a_bc) .* p.agrid[1]
+
+                    # p.a_tom[:,yF,yP,yT,z] = p.borrow_constr .* extrapolate(p.tmp_itp, Line()).(p.agrid) .+ (1 .- p.borrow_constr) .* p.agrid[1]
                 end
             end
         end
@@ -147,15 +171,32 @@ function update_con(p)
 end
 
 
-
-
-
+function setup_income(p)
+    p.income_trans *= 0.0
+    # Add threading?
+    for a in 1:p.na
+        for yF in 1:p.nyF
+            for yP in 1:p.nyP
+                for yT in 1:p.nyT
+                    for z in 1:p.nz
+                        for a2 in 1:p.na
+                            if a == a2
+                                # println("size(ones(yF,yP,yT,z)./sum(ones(yF,yP,yT,z))): ", size(ones(p.nyF,p.nyP,p.nyT,p.nz)./sum(ones(p.nyF,p.nyP,p.nyT,p.nz))))
+                                p.income_trans[a,yF,yP,yT,z][a2,:,:,:,:] = ones(p.nyF,p.nyP,p.nyT,p.nz)./sum(ones(p.nyF,p.nyP,p.nyT,p.nz))
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
 
 
 
 ##
 
-# p0 = Params()
+p0 = Params()
 # println(p0)
 
 # @unpack na,nyF,nyP,nyT,nz = p0
@@ -173,3 +214,11 @@ end
 # println("1. r: ", p0.r, ", R: ", p0.R)
 # p0.r = 0.5
 # println("2. r: ", p0.r, ", R: ", p0.R)
+
+# println(p0.agrid)
+
+itp = interpolate(([1, 2, 3],), [4, 5, 6], Gridded(Linear()))
+# itp = interpolate([1 2 3; 4 5 6], BSpline(Linear()))
+itp.([2 2.3 2.4 2.7 3])
+extp = extrapolate(itp, Line())
+extp.([0.5 1 1.5 2 3 3.5])
