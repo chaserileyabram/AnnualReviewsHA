@@ -79,23 +79,25 @@ function solve_EGP(m)
 end
 
 
-m0 = ModelDiscrete()
-setup_income(m0)
-# println("sum(m0.income_trans): ", sum(m0.income_trans))
-# println("size(m0.income_trans): ", size(m0.income_trans))
-# println("size(m0.income_trans[1,1,1,1,1]): ", size(m0.income_trans[1,1,1,1,1]))
-# println("con_old: ", m0.con)
-solve_EGP(m0)
-# println(m0.con)
+# m0 = ModelDiscrete()
+# setup_income(m0)
+# # println("sum(m0.income_trans): ", sum(m0.income_trans))
+# # println("size(m0.income_trans): ", size(m0.income_trans))
+# # println("size(m0.income_trans[1,1,1,1,1]): ", size(m0.income_trans[1,1,1,1,1]))
+# # println("con_old: ", m0.con)
+# solve_EGP(m0)
+# # println(m0.con)
 
-c_plot = plot(m0.agrid, m0.con[:,1,1,1,1],
-xlabel = "a", ylabel = "c", title = "Consumption",
-legend = false,)
-display(c_plot)
+# c_plot = plot(m0.agrid, m0.con[:,1,1,1,1],
+# xlabel = "a", ylabel = "c", title = "Consumption",
+# legend = false,)
+# display(c_plot)
 
-a_plot = plot(m0.agrid, m0.a_tom[:,1,1,1,1],
-xlabel = "a", ylabel = "a'", title = "Assets tomorrow",
-legend = false,)
-display(a_plot)
+# a_plot = plot(m0.agrid, m0.a_tom[:,1,1,1,1], label = "a'",
+# xlabel = "a", ylabel = "a'", title = "Assets tomorrow",
+# legend = :bottomright)
+# plot!(m0.agrid, m0.agrid, label = "45-deg")
+# display(a_plot)
 
-
+# println("a grid: ", m0.agrid)
+# println("implied a'?: ", m0.a_tom[:,1,1,1,1])

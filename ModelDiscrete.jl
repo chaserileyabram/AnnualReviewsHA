@@ -29,7 +29,7 @@ using Statistics
     R = 1+r
 
     # Build grids
-    na = 50
+    na = 10
     a_bc = 0
     a_max = 200
     agrid::Array{Float64,1} = LinRange(a_bc,a_max,na).^(0.5) # Needs to be properly built
@@ -44,7 +44,7 @@ using Statistics
     yFgrid::Array{Float64,1} = LinRange(1.0,1.0,nyF).^(0.5)
     nyP = 2
     yPgrid::Array{Float64,1} = LinRange(0,0.1,nyP).^(0.5)
-    nyT = 20
+    nyT = 2
     yTgrid::Array{Float64,1} = LinRange(0,0.1,nyT).^(0.5)
 
     nz = 2
@@ -62,7 +62,21 @@ using Statistics
     zzgrid = repeat(reshape(zgrid, (1,1,1,1,nz)), na, nyF, nyP, nyT, 1)
 
     # income transitions (needs to be set up)
+    # This is a' as a function of a', so no movement in a dim
     income_trans = [zeros(na,nyF,nyP,nyT,nz)/(na*nyF*nyP*nyT*nz) for a in 1:na, yF in 1:nyF, yP in 1:nyP, yT in 1:nyT, z in 1:nz]
+
+    # Same shape as income, but now account for policy in a (and/or taxes)
+    # a' as a function of a
+    inter_trans = [zeros(na,nyF,nyP,nyT,nz)/(na*nyF*nyP*nyT*nz) for a in 1:na, yF in 1:nyF, yP in 1:nyP, yT in 1:nyT, z in 1:nz]
+
+    # Used for interpolating in building inter_trans
+    lb = 0.0
+    ub = 1.0
+    lbubmix = 0.5
+
+    # Full transition (requires policy solved)
+    full_trans_dim = na*nyF*nyP*nyT*nz
+    full_trans = zeros(full_trans_dim, full_trans_dim)
 
     # Consumption as function of assets and income today
     con = zeros(na,nyF,nyP,nyT,nz)
@@ -88,8 +102,14 @@ using Statistics
     # Expected MUC
     emuc = zeros(na,nyF,nyP,nyT,nz)
 
+    # Distribution
+    statdist = ones(full_trans_dim)/full_trans_dim
+
     egp_maxiter = 1000
     egp_tol = 1e-6
+
+    statdist_maxiter = 10
+    statdist_tol = 1e-9
 
 end
 
@@ -179,12 +199,12 @@ function setup_income(m)
             for yP in 1:m.nyP
                 for yT in 1:m.nyT
                     for z in 1:m.nz
-                        for a2 in 1:m.na
-                            if a == a2
+                        # for a2 in 1:m.na
+                        #     if a == a2
                                 # println("size(ones(yF,yP,yT,z)./sum(ones(yF,yP,yT,z))): ", size(ones(m.nyF,m.nyP,m.nyT,m.nz)./sum(ones(m.nyF,m.nyP,m.nyT,m.nz))))
-                                m.income_trans[a,yF,yP,yT,z][a2,:,:,:,:] = ones(m.nyF,m.nyP,m.nyT,m.nz)./sum(ones(m.nyF,m.nyP,m.nyT,m.nz))
-                            end
-                        end
+                                m.income_trans[a,yF,yP,yT,z][a,:,:,:,:] = ones(m.nyF,m.nyP,m.nyT,m.nz)./sum(ones(m.nyF,m.nyP,m.nyT,m.nz))
+                        #     end
+                        # end
                     end
                 end
             end
