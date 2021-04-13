@@ -9,8 +9,6 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --mem-per-cpu=6000
 
-# Print the task id.
-echo "My SLURM_ARRAY_TASK_ID: " $SLURM_ARRAY_TASK_ID
 
 module load julia
 julia testjulia.jl

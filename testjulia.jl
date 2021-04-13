@@ -9,7 +9,7 @@ write(io, "Test on "*task_id);
 
 close(io);
 
-println("Print statement for "*task_id)
+println("Print statement for "*task_id*" again!")
 
 
 # For Slurm
