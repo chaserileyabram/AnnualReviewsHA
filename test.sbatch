@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=test
-#SBATCH --output= testout.out
-#SBATCH --error= testerr.err
+#SBATCH --output= /home/abram/AnnualReviewsHA/output/testout.out
+#SBATCH --error= /home/abram/AnnualReviewsHA/output/testerr.err
 #SBATCH --partition=broadwl
 #SBATCH --array= 1-10
 #SBATCH --time=24:00:00
