@@ -14,5 +14,5 @@ echo "My SLURM_ARRAY_TASK_ID: " $SLURM_ARRAY_TASK_ID
 
 module load julia/1.4.2
 
-julia testjulia.jl
+julia testjulia.jl > output
 
