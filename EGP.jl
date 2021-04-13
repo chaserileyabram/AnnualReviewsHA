@@ -81,6 +81,7 @@ end
 
 # m0 = ModelDiscrete()
 # setup_income(m0)
+# setup_power_grids(m0)
 # # println("sum(m0.income_trans): ", sum(m0.income_trans))
 # # println("size(m0.income_trans): ", size(m0.income_trans))
 # # println("size(m0.income_trans[1,1,1,1,1]): ", size(m0.income_trans[1,1,1,1,1]))

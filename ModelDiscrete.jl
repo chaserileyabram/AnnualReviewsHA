@@ -17,7 +17,7 @@ using Statistics
 @with_kw mutable struct ModelDiscrete
 
     # Discount factor
-    beta0 = 0.9
+    beta0 = 0.97
 
     # Relative Risk Aversion
     gamma = 1.0
@@ -32,7 +32,10 @@ using Statistics
     na = 10
     a_bc = 0
     a_max = 200
-    agrid::Array{Float64,1} = LinRange(a_bc,a_max,na).^(0.5) # Needs to be properly built
+    a_shape = 0.15
+    agrid::Array{Float64,1} = LinRange(a_bc,a_max,na).^(1.5) # Needs to be set up
+
+    grid_setup = false
 
     # Used as an indicator during EGP (stored here for inplace updating)
     borrow_constr = zeros(na)
@@ -41,11 +44,11 @@ using Statistics
     tmp_itp = NaN
 
     nyF = 2
-    yFgrid::Array{Float64,1} = LinRange(1.0,1.0,nyF).^(0.5)
+    yFgrid::Array{Float64,1} = LinRange(1.0,1.0,nyF)
     nyP = 2
-    yPgrid::Array{Float64,1} = LinRange(0,0.1,nyP).^(0.5)
+    yPgrid::Array{Float64,1} = LinRange(0,0.1,nyP)
     nyT = 2
-    yTgrid::Array{Float64,1} = LinRange(0,0.1,nyT).^(0.5)
+    yTgrid::Array{Float64,1} = LinRange(0,5.0,nyT)
 
     nz = 2
     zgrid = LinRange(0,nz,nz)
@@ -102,13 +105,17 @@ using Statistics
     # Expected MUC
     emuc = zeros(na,nyF,nyP,nyT,nz)
 
-    # Distribution
-    statdist = ones(full_trans_dim)/full_trans_dim
+    # Stationary Distribution
+    statdist = ones(na,nyF,nyP,nyT,nz)./full_trans_dim
+    statdistvec = ones(full_trans_dim)./full_trans_dim
+
+    # Distribution over just assets
+    # adist = ones(na)/na
 
     egp_maxiter = 1000
     egp_tol = 1e-6
 
-    statdist_maxiter = 10
+    statdist_maxiter = 1000
     statdist_tol = 1e-9
 
 end
@@ -212,6 +219,21 @@ function setup_income(m)
     end
 end
 
+# Setup grids with power spacing
+function setup_power_grids(m)
+    # Start with [0,1]
+    m.agrid = LinRange(0,1,m.na)
+    # Powerspace
+    m.agrid = m.agrid.^(1/m.a_shape)
+    # Scale to bounds
+    m.agrid = m.a_bc .+ (m.a_max - m.a_bc) .* m.agrid
+
+    # Apply to aagrid
+    m.aagrid = repeat(reshape(m.agrid, (m.na,1,1,1,1)), 1, m.nyF, m.nyP, m.nyT, m.nz)
+
+    # Indicate that grids have been setup
+    m.grid_setup = true
+end
 
 
 ##
