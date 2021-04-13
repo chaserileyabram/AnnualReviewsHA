@@ -12,5 +12,8 @@
 # Print the task id.
 echo "My SLURM_ARRAY_TASK_ID: " $SLURM_ARRAY_TASK_ID
 
+module load julia
+julia testjulia.jl
+
 
 
