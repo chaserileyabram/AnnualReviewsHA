@@ -3,7 +3,7 @@
 #SBATCH --output= testout.out
 #SBATCH --error= testerr.err
 #SBATCH --partition=broadwl
-#SBATCH --array=1-10
+#SBATCH --array= 1-10
 #SBATCH --time=24:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -14,5 +14,5 @@ echo "My SLURM_ARRAY_TASK_ID: " $SLURM_ARRAY_TASK_ID
 
 module load julia/1.4.2
 
-julia -nodisplay < ./testjulia.jl
+julia testjulia.jl
 
