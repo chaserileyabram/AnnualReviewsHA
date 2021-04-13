@@ -1,5 +1,5 @@
 # Chase Abram
-include("ModelDiscrete.jl")
+# include("ModelDiscrete.jl")
 
 # Just for now to test
 include("EGP.jl")
@@ -28,6 +28,8 @@ function find_statdist(m)
 
     statdist_old = m.statdist
 
+    println("init statdist: ", m.statdist)
+
     while statdist_iter < m.statdist_maxiter && statdist_diff > m.statdist_tol
         m.statdist = m.full_trans'*m.statdist
 
@@ -44,7 +46,7 @@ end
 
 # Find full transition matrix over states 
 # Accounts for shocks and policy
-function find_full_trans(m)
+function setup_full_trans(m)
     for a in 1:m.na
         for yF in 1:m.nyF
             for yP in 1:m.nyP
@@ -66,6 +68,7 @@ function find_full_trans(m)
             end
         end
     end
+    println("full_trans set up")
 end
 
 # Maps state index to column/row in full trans matrix
@@ -78,26 +81,25 @@ end
 # This is like the income transition, but accounts for policy also
 function setup_inter_trans(m)
     m.inter_trans *= 0.0
+    # println("inter_trans to 0")
     # Add threading?
     for a in 1:m.na
         for yF in 1:m.nyF
             for yP in 1:m.nyP
                 for yT in 1:m.nyT
                     for z in 1:m.nz
-                        # println("size(ones(yF,yP,yT,z)./sum(ones(yF,yP,yT,z))): ", size(ones(m.nyF,m.nyP,m.nyT,m.nz)./sum(ones(m.nyF,m.nyP,m.nyT,m.nz))))
-                        # m.income_trans[a,yF,yP,yT,z][a2,:,:,:,:] = ones(m.nyF,m.nyP,m.nyT,m.nz)./sum(ones(m.nyF,m.nyP,m.nyT,m.nz))
-
-                        # if m.a_tom[a, yF, yP, yT, z]
-
-                        # end
-
+                        # println("out a2 loop")
                         for a2 in 1:m.na
-                            m.acmix = (m.c - ap)/(m.c - m.a)
-
-                            if a2 == split_a_tom(m,a)[1]
-                                m.inter_trans[a,yF,yP,yT,z][a2,:,:,:,:] = m.acmix .* m.income_trans[a,yF,yP,yT,z][a,:,:,:,:]
-                            elseif a2 == split_a_tom(m,a)[2]
-                                m.inter_trans[a,yF,yP,yT,z][a2,:,:,:,:] = (1 - m.acmix) .* m.income_trans[a,yF,yP,yT,z][a,:,:,:,:]
+                            
+                            
+                            if m.agrid[a2] == split_a_tom(m,m.a_tom[a,yF,yP,yT,z])[1]
+                                # println("in 1")
+                                
+                                m.inter_trans[a,yF,yP,yT,z][a2,:,:,:,:] = m.lbubmix .* m.income_trans[a,yF,yP,yT,z][a,:,:,:,:]
+                            elseif m.agrid[a2] == split_a_tom(m,m.a_tom[a,yF,yP,yT,z])[2]
+                                # println("in 2")
+                                
+                                m.inter_trans[a,yF,yP,yT,z][a2,:,:,:,:] = (1 - m.lbubmix) .* m.income_trans[a,yF,yP,yT,z][a,:,:,:,:]
                             end
                         end
                     end
@@ -105,6 +107,7 @@ function setup_inter_trans(m)
             end
         end
     end
+    println("inter_trans set up")
 end
 
 # Returns the asset grid points that will recieve weight of policy ap
@@ -112,25 +115,42 @@ function split_a_tom(m, ap)
     if ap in m.agrid
         return [ap, ap]
     else
-        if ap > maximum(agrid)
-            m.lb = maximum(agrid)
-            m.ub = maximum(agrid)
-        elseif ap < minimum(agrid)
-            m.lb = minimum(agrid)
-            m.ub = minimum(agrid)
+        if ap > maximum(m.agrid)
+            m.lb = maximum(m.agrid)
+            m.ub = maximum(m.agrid)
+        elseif ap < minimum(m.agrid)
+            m.lb = minimum(m.agrid)
+            m.ub = minimum(m.agrid)
         else
             m.lb = maximum(m.agrid[ap .> m.agrid])
             m.ub = minimum(m.agrid[ap .< m.agrid])
         end
     end
-        
+    
+    m.lbubmix = (m.ub - ap)/(m.ub - m.lb)
+
     return [m.lb, m.ub]
 end
 
 
 
-m0 = ModelDiscrete()
-# setup_income(m0)
-# solve_EGP(m0)
+m0 = ModelDiscrete(na = 50)
+setup_income(m0)
+solve_EGP(m0)
+
+setup_inter_trans(m0)
+setup_full_trans(m0)
 
 # find_statdist(m0)
+sum1 = sum(m0.full_trans, dims=1)
+println("sum 1: ", sum1)
+sum2 = sum(m0.full_trans, dims=2)
+println("sum 2: ", sum2)
+
+p1 = plot(sum1)
+display(p1)
+p2 = plot(sum2)
+display(p2)
+
+# Need to start with income dist then 
+# check each construction
