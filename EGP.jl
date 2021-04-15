@@ -6,19 +6,17 @@ include("ModelDiscrete.jl")
 
 function solve_EGP(m)
 
-    # @unpack_Params p
-    # unpack other structs also?
-
     # Guess cons
     con_old = m.r .* m.aagrid + m.yyFgrid + m.yyPgrid + m.yyTgrid
-    # con_old = ones(size(m.aagrid))
     m.con = con_old
 
     # Initialize iteration trackers
     egp_iter = 0
     egp_diff = Inf
 
+    # Should probably add "silent" option to model
     println("Entering Loop...")
+
     # Run until convergence or out of iterations
     while egp_iter < m.egp_maxiter && egp_diff > m.egp_tol
 
@@ -26,32 +24,24 @@ function solve_EGP(m)
 
         # u'(c)
         up(m)
-        # println("it: ", egp_iter, ", var(m.up): ", var(m.up))
 
         # Expected marginal utility
         emuc(m)
-        # println("it: ", egp_iter, ", var(m.emuc): ", var(m.emuc))
 
         # Marginal utility
         muc(m)
-        # println("it: ", egp_iter, ", var(m.muc): ", var(m.muc))
 
         # Update forward looking consumption
         update_con_euler(m)
-        # println("it: ", egp_iter, ", var(m.con_euler): ", var(m.con_euler))
 
         # Update forward looking assets
         update_a_euler(m)
-        # println("it: ", egp_iter, ", var(m.a_euler): ", var(m.a_euler))
 
         # Interpolate/invert to get implied asset choice
         interp_a_tom(m)
-        # println("it: ", egp_iter, ", var(m.a_tom): ", var(m.a_tom))
 
         # Implied consumption choice
         update_con(m)
-        # println("it: ", egp_iter, ", var(m.con): ", var(m.con))
-
         
         # Check diff
         egp_diff = maximum(abs.(m.con - con_old))
