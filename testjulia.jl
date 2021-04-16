@@ -5,7 +5,9 @@ task_id = string(ENV["SLURM_ARRAY_TASK_ID"])
 
 io = open(task_id*"test.txt", "w");
 
-write(io, "Test on "*task_id);
+string_write = "Test on "*task_id
+
+write(io, string_write);
 
 close(io);
 

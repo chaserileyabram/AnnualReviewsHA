@@ -16,6 +16,13 @@ include("mpc.jl")
 
 ##
 
+# Get task id from slurm
+if "SLURM_ARRAY_TASK_ID" in keys(ENV)
+    task_id = ENV["SLURM_ARRAY_TASK_ID"]
+else
+    task_id = 20
+end
+
 function calibrate(m)
     
     setup_power_grids(m)
@@ -23,7 +30,7 @@ function calibrate(m)
     setup_income(m)
     println("m income setup")
     
-    calls = 0
+    call = 0
     function fitness(b)
         call += 1
         println("fitness call: ", call)
@@ -40,15 +47,15 @@ function calibrate(m)
         return mean_wealth(m) - m.target_mean_wealth
     end
 
-    println("lower: ", fitness(0.9))
+    println("lower: ", fitness(0.97))
     println("upper: ",fitness(0.99))
     # op = optimize(fitness, 0.92, 0.99)
     return find_zero(fitness, (0.9, 0.99), Bisection())
 end
 
 
-m0 = ModelDiscrete()
-println("m0 created")
+m0 = ModelDiscrete(na = task_id)
+println("m0 created with ", m0.na, " size agrid")
 
 println("cal: ", calibrate(m0))
 
@@ -58,6 +65,8 @@ println("calibrated mean wealth: ", mean_wealth(m0))
 
 # f(x) = x^100
 # op = optimize(f, -10, 10)
+
+##
 
 
 
