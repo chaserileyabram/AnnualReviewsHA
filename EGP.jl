@@ -15,7 +15,7 @@ function solve_EGP(m)
     egp_diff = Inf
 
     # Should probably add "silent" option to model
-    println("Entering Loop...")
+    # println("Entering Loop...")
 
     # Run until convergence or out of iterations
     while egp_iter < m.egp_maxiter && egp_diff > m.egp_tol
@@ -51,8 +51,8 @@ function solve_EGP(m)
         egp_iter += 1
 
         # Add some print statements for progress here
-        println("iter: ", egp_iter)
-        println("    diff: ", egp_diff)
+        # println("iter: ", egp_iter)
+        # println("    diff: ", egp_diff)
         
         # c_plot = plot(m.agrid, m.con[:,1,1,1,1],
         # xlabel = "a", ylabel = "c", title = "Consumption",

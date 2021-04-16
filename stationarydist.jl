@@ -47,8 +47,8 @@ function find_statdist(m)
         statdist_iter += 1
 
         # Progress
-        println("statdist_iter: ", statdist_iter)
-        println("    diff: ", statdist_diff)
+        # println("statdist_iter: ", statdist_iter)
+        # println("    diff: ", statdist_diff)
     end
 
     # Take vec back to grid
@@ -70,7 +70,7 @@ function setup_full_trans(m)
             end
         end
     end
-    println("full_trans set up")
+    # println("full_trans set up")
 end
 
 # Maps state index to column/row in full trans matrix
@@ -111,7 +111,7 @@ function setup_inter_trans(m)
             end
         end
     end
-    println("inter_trans set up")
+    # println("inter_trans set up")
 end
 
 # Returns the asset grid points that will recieve weight of policy ap
@@ -149,19 +149,19 @@ end
 
 
 
-m0 = ModelDiscrete(na = 50, nyF = 2, nyP = 2, 
-nyT = 2, nbh = 2)
-setup_power_grids(m0)
-setup_income(m0)
-solve_EGP(m0)
+# m0 = ModelDiscrete(na = 50, nyF = 2, nyP = 2, 
+# nyT = 2, nbh = 2)
+# setup_power_grids(m0)
+# setup_income(m0)
+# solve_EGP(m0)
 
-setup_inter_trans(m0)
-setup_full_trans(m0)
+# setup_inter_trans(m0)
+# setup_full_trans(m0)
 
-find_statdist(m0)
-find_adist(m0)
+# find_statdist(m0)
+# find_adist(m0)
 
-plot(m0.agrid, m0.adist)
+# plot(m0.agrid, m0.adist)
 
 # plot(m0.statdist)
 

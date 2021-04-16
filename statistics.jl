@@ -22,7 +22,7 @@ end
 
 # Mean wealth
 function mean_wealth(m)
-    println("mean_wealth: ", sum(m.statdist .* m.aagrid))
+    # println("mean_wealth: ", sum(m.statdist .* m.aagrid))
     return sum(m.statdist .* m.aagrid)
 end
 
@@ -89,9 +89,17 @@ function gini(m)
 end
 
 
-# m0 = ModelDiscrete()
-# setup_power_grids(m0)
-# setup_income(m0)
+m0 = ModelDiscrete(beta0 = 0.5)
+setup_power_grids(m0)
+setup_income(m0)
+
+solve_EGP(m0)
+
+setup_inter_trans(m0)
+setup_full_trans(m0)
+
+find_statdist(m0)
+find_adist(m0)
 
 
 mean_income(m0)

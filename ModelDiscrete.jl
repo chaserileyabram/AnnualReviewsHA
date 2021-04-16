@@ -134,6 +134,9 @@ using Statistics
     statdist_maxiter = 1000
     statdist_tol = 1e-9
 
+    # Targets
+    target_mean_wealth = 0.9
+
 end
 
 # Marginal utility
