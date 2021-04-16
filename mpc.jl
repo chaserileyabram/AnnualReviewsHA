@@ -34,17 +34,17 @@ function mpc(m, delta)
     # return sum(m.statdist .*(m.tmp_itp.(m.R .* m.aaagrid .+ delta, m.yyFgrid, m.yyPgrid, m.yyTgrid, m.bbhgrid) - m.tmp_itp.(m.R .* m.aaagrid, m.yyFgrid, m.yyPgrid, m.yyTgrid, m.bbhgrid)))
 end
 
-mpc(m0,0.1)
-mpc(m0,-0.1)
+# mpc(m0,0.1)
+# mpc(m0,-0.1)
 
-mpc(m0,1.0)
-mpc(m0,-1.0)
+# mpc(m0,1.0)
+# mpc(m0,-1.0)
 
-mpc(m0,10.0)
-mpc(m0,-10.0)
+# mpc(m0,10.0)
+# mpc(m0,-10.0)
 
-deltas = collect(LinRange(-1,1,50))
-filter!(z -> z != 0, deltas)
-plot(deltas, [mpc(m0, d) for d in deltas], 
-title = "E[MPC(delta)]", xlabel = "delta", 
-ylabel = "E[m]", legend = false)
+# deltas = collect(LinRange(-1,1,50))
+# filter!(z -> z != 0, deltas)
+# plot(deltas, [mpc(m0, d) for d in deltas], 
+# title = "E[MPC(delta)]", xlabel = "delta", 
+# ylabel = "E[m]", legend = false)

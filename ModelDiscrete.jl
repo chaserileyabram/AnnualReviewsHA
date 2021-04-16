@@ -1,7 +1,7 @@
 using Parameters
 
 using Pkg
-# Pkg.add("Statistics")
+# Pkg.add("DelimitedFiles")
 using Interpolations
 
 # For testing
@@ -9,6 +9,11 @@ using Random
 using Plots
 using Distributions
 using Statistics
+using DelimitedFiles
+
+using LinearAlgebra
+
+using Roots
 
 ##
 
@@ -16,8 +21,19 @@ using Statistics
 
 @with_kw mutable struct ModelDiscrete
 
+    # Name of ModelDiscrete
+    name = "default"
+
+    # Description
+    descr = "default model"
+
+    # Mean annual income in dollars
+    numeraire_in_dollars = 72000
+
     # Discount factor (initial)
-    beta0 = 0.9
+    beta0 = 0.95
+
+    # Discount factor (bounds for search)
 
     # Relative Risk Aversion
     gamma = 1.0
@@ -52,17 +68,27 @@ using Statistics
     # Income
     # Fixed
     nyF = 2
-    yFgrid::Array{Float64,1} = LinRange(1.0,1.0,nyF)
-    # Persisten
-    nyP = 2
-    yPgrid::Array{Float64,1} = LinRange(0.9,1.1,nyP)
+    yFgrid::Array{Float64,1} = exp.(LinRange(0.0,.0,nyF))
+    yFtrans = Matrix{Float64}(I,nyF,nyF)
+
+    # Persistent
+    nyP = 4
+    yP_sd = 0.1
+    yP_rho = 0.0
+    yPgrid::Array{Float64,1} = exp.(rouwenhorst(nyP, -(yP_sd^2)/2,yP_sd, yP_rho)[1])
+    yPtrans = rouwenhorst(nyP, -(yP_sd^2)/2,yP_sd, yP_rho)[2]
+
     # Transitory
-    nyT = 2
-    yTgrid::Array{Float64,1} = LinRange(0.5,1.5,nyT)
+    nyT = 4
+    yT_sd = 0.2
+    yTgrid::Array{Float64,1} = exp.(match_normal(nyT, 0, yT_sd)[2])
+    yTtrans = repeat(reshape(match_normal(nyT, 0, yT_sd)[3], (1,nyT)), nyT)
 
     # Discount factor heterogeneity
     nbh = 2
+    bh_sd = 0
     bhgrid = LinRange(0,nbh,nbh)
+    bhtrans = repeat(reshape(match_normal(nbh, 0, bh_sd)[3], (1,nbh)), nbh)
 
     # Build augmented grids (Fix this!)
     aagrid = repeat(reshape(agrid, (na,1,1,1,1)), 1, nyF, nyP, nyT, nbh)
@@ -75,7 +101,7 @@ using Statistics
 
     bbhgrid = repeat(reshape(bhgrid, (1,1,1,1,nbh)), na, nyF, nyP, nyT, 1)
 
-    # income transitions (needs to be set up)
+    # Income transitions (needs to be set up)
     # This is a' as a function of a', so no movement in a dim
     income_trans = [zeros(na,nyF,nyP,nyT,nbh)/(na*nyF*nyP*nyT*nbh) for a in 1:na, yF in 1:nyF, yP in 1:nyP, yT in 1:nyT, bh in 1:nbh]
 
@@ -135,7 +161,7 @@ using Statistics
     statdist_tol = 1e-9
 
     # Targets
-    target_mean_wealth = 0.9
+    target_mean_wealth = 10.2
 
 end
 
@@ -228,7 +254,17 @@ function setup_income(m)
             for yP in 1:m.nyP
                 for yT in 1:m.nyT
                     for bh in 1:m.nbh
-                        m.income_trans[a,yF,yP,yT,bh][a,:,:,:,:] = ones(m.nyF,m.nyP,m.nyT,m.nbh)./sum(ones(m.nyF,m.nyP,m.nyT,m.nbh))
+                        # m.income_trans[a,yF,yP,yT,bh][a,:,:,:,:] = ones(m.nyF,m.nyP,m.nyT,m.nbh)./sum(ones(m.nyF,m.nyP,m.nyT,m.nbh))
+                        
+                        # Fixed
+                        m.income_trans[a,yF,yP,yT,bh][a,:,:,:,:] = repeat(reshape(m.yFtrans[yF,:], (m.nyF,1,1,1)), 1, m.nyP, m.nyT, m.nbh)
+                        # Persistent
+                        m.income_trans[a,yF,yP,yT,bh][a,:,:,:,:] .*= repeat(reshape(m.yPtrans[yP,:], (1,m.nyP,1,1)), m.nyF, 1, m.nyT, m.nbh)
+                        # Transitory
+                        m.income_trans[a,yF,yP,yT,bh][a,:,:,:,:] .*= repeat(reshape(m.yTtrans[yT,:], (1,1,m.nyT,1)), m.nyF, m.nyP, 1, m.nbh)
+
+                        # beta
+                        m.income_trans[a,yF,yP,yT,bh][a,:,:,:,:] .*= repeat(reshape(m.bhtrans[bh,:], (1,1,1,m.nbh)), m.nyF, m.nyP, m.nyT, 1)
                     end
                 end
             end
@@ -252,8 +288,102 @@ function setup_power_grids(m)
     m.grid_setup = true
 end
 
+# Creates equispaced approximation to normal distribution
+# n - number of points
+# mu - mean
+# sigma - standard deviation
+# width - multiple of standard deviation for width of grid
+# returns:
+    # f - error in approximation
+    # x - location of points
+    # p - probabilities
+function discrete_normal(n, mu, sigma, width)
+    if n > 2
+        x = collect(LinRange(mu - width*sigma, mu + width*sigma, n))
+        # discretize CDF trapezoid-wise
+        p = zeros(n)
+        p[1] = cdf(Normal(mu,sigma), x[1] + (x[2] - x[1])/2)
+        for i in 2:n-1
+            p[i] = cdf(Normal(mu,sigma), x[i] + (x[i+1] - x[i])/2) - cdf(Normal(mu,sigma), x[i] - (x[i] - x[i-1])/2)
+        end
+        p[n] = 1 - sum(p[1:n-1])
+    elseif n == 2
+        x = collect(LinRange(mu - width*sigma, mu + width*sigma, n))
+        # split the mass
+        p = 0.5 * ones(n)
+    else
+        x = [mu]
+        p = [1.0]
+    end
+    
+    Ex = x'*p
+    SDx = sqrt.((x'.^2)*p .- Ex^2)
+    
+    # Error between realized sd and desired
+    f = SDx .- sigma
+    return [f, x, p]
+end
+
+
+# Probably move these to their own .jl files?
+# Returns normal approximation with optimal width
+function match_normal(n, mu, sigma, width_guess=0.5)
+    width = find_zero(x -> discrete_normal(n,mu,sigma,x),width_guess)
+    temp, grid, dist = discrete_normal(n, mu, sigma, width)
+end
+
+
+# Rouwenhorst discretization of AR(1)
+function rouwenhorst(n, mu, sigma, rho)
+    # Get width of grid
+    width = sqrt((n-1)* sigma^2/(1-rho^2)) # This is correct, though both Greg and Kopecky have typos in their note
+    
+    # Equi-space grid
+    grid = LinRange(mu - width, mu + width, n)
+
+    # Initialize for 2-case
+    p = (1 + rho)/2
+    trans = [p 1-p; 1-p p]
+
+    # Recursively find n-case
+    if n > 2
+        for i in 2:n-1
+            # Per Rouwenhorst
+            trans = p.*[trans zeros(i); zeros(i)' 0] + (1-p).*[zeros(i) trans; 0 zeros(i)'] + (1-p).*[zeros(i)' 0; trans zeros(i)] + p .* [0 zeros(i)'; zeros(i) trans]
+            # Row sums should be 2 for {2,...,n-1}, and 1 for {1,n}
+            trans ./= sum(trans, dims=2)
+        end
+    end
+
+    return grid, trans
+end
+
+# row_test = rouwenhorst(2,2,0.1,0.8)
+# println("row grid: ", row_test[1])
+# println("row trans: ", row_test[2])
+# row_test[2]
+# sum(row_test[2], dims=2)
+
+# readdlm("quarterly_b_yPtrans.txt")
+
+# m0 = ModelDiscrete()
+
+# setup_income(m0)
+
+# size(m0.income_trans)
+
+# m0.yFgrid
+# m0.yFtrans
+
+# m0.yPgrid
+# m0.yPtrans
+
+
+
 
 ##
+
+# match_normal(5, 2, 0)
 
 # p0 = Params()
 # println(p0)

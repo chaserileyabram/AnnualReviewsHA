@@ -89,47 +89,47 @@ function gini(m)
 end
 
 
-m0 = ModelDiscrete(beta0 = 0.5)
-setup_power_grids(m0)
-setup_income(m0)
+# m0 = ModelDiscrete(beta0 = 0.5)
+# setup_power_grids(m0)
+# setup_income(m0)
 
-solve_EGP(m0)
+# solve_EGP(m0)
 
-setup_inter_trans(m0)
-setup_full_trans(m0)
+# setup_inter_trans(m0)
+# setup_full_trans(m0)
 
-find_statdist(m0)
-find_adist(m0)
+# find_statdist(m0)
+# find_adist(m0)
 
 
-mean_income(m0)
+# mean_income(m0)
 
-var_log_gross_income(m0)
+# var_log_gross_income(m0)
 
-mean_wealth(m0)
+# mean_wealth(m0)
 
-wealth_lesseq(m0,0.0)
-wealth_lesseq(m0,1.0)
+# wealth_lesseq(m0,0.0)
+# wealth_lesseq(m0,1.0)
 
-a_tom_lesseq(m0, 0.0)
-a_tom_lesseq(m0, 1.0)
+# a_tom_lesseq(m0, 0.0)
+# a_tom_lesseq(m0, 1.0)
 
-wealth_lesseq_fi(m0,0)
-wealth_lesseq_fi(m0,1/6)
-wealth_lesseq_fi(m0,1/12)
+# wealth_lesseq_fi(m0,0)
+# wealth_lesseq_fi(m0,1/6)
+# wealth_lesseq_fi(m0,1/12)
 
-wealth_quantile(m0, 0.0)
-wealth_quantile(m0, 0.1)
-wealth_quantile(m0, 0.25)
-wealth_quantile(m0, 0.5)
-wealth_quantile(m0, 0.9)
-wealth_quantile(m0, 0.99)
-wealth_quantile(m0, 0.999)
+# wealth_quantile(m0, 0.0)
+# wealth_quantile(m0, 0.1)
+# wealth_quantile(m0, 0.25)
+# wealth_quantile(m0, 0.5)
+# wealth_quantile(m0, 0.9)
+# wealth_quantile(m0, 0.99)
+# wealth_quantile(m0, 0.999)
 
-wealth_held_top(m0, 1)
-wealth_held_top(m0, 0.5)
-wealth_held_top(m0, 0.1)
-wealth_held_top(m0, 0.01)
+# wealth_held_top(m0, 1)
+# wealth_held_top(m0, 0.5)
+# wealth_held_top(m0, 0.1)
+# wealth_held_top(m0, 0.01)
 
-gini(m0)
+# gini(m0)
 

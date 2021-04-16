@@ -19,9 +19,14 @@ include("mpc.jl")
 function calibrate(m)
     
     setup_power_grids(m)
+    println("m grids setup")
     setup_income(m)
-
+    println("m income setup")
+    
+    calls = 0
     function fitness(b)
+        call += 1
+        println("fitness call: ", call)
         m.beta0 = b
 
         solve_EGP(m)
@@ -42,7 +47,8 @@ function calibrate(m)
 end
 
 
-m0 = ModelDiscrete(na = 10)
+m0 = ModelDiscrete()
+println("m0 created")
 
 println("cal: ", calibrate(m0))
 
@@ -52,5 +58,7 @@ println("calibrated mean wealth: ", mean_wealth(m0))
 
 # f(x) = x^100
 # op = optimize(f, -10, 10)
+
+
 
 
