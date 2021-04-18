@@ -21,7 +21,7 @@ if "SLURM_ARRAY_TASK_ID" in keys(ENV)
     task_id = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
     println("SLURM_ARRAY_TASK_ID found with ", task_id)
 else
-    task_id = 9999
+    task_id = 4
 end
 
 
@@ -62,6 +62,7 @@ function calibrate(m)
 
     # return fitness(0.98)
 
+    # Should I build my own zero finder to optimize to the problem at hand?
     return find_zero(fitness, (0.97, 0.99), Bisection())
 end
 
@@ -76,14 +77,15 @@ println("m0 income setup")
 
 println("cal: ", calibrate(m0))
 
-# println("m0 mean wealth target: ", m0.target_mean_wealth)
-# println("calibrated mean wealth: ", mean_wealth(m0))
+println("m0 mean wealth target: ", m0.target_mean_wealth)
+println("calibrated mean wealth: ", mean_wealth(m0))
 
 
 # f(x) = x^100
 # op = optimize(f, -10, 10)
 
 ##
+
 
 
 
