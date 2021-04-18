@@ -38,7 +38,8 @@ function calibrate(m)
         println("fitness call: ", call)
         m.beta0 = b
 
-        # solve_EGP(m)
+        solve_EGP(m)
+        println("EGP solved")
 
         # setup_inter_trans(m)
         # setup_full_trans(m)
@@ -46,7 +47,7 @@ function calibrate(m)
         # find_statdist(m)
         # find_adist(m)
 
-        return 99
+        return 999
 
         # return mean_wealth(m) - m.target_mean_wealth
     end
