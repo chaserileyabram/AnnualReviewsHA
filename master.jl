@@ -21,41 +21,41 @@ if "SLURM_ARRAY_TASK_ID" in keys(ENV)
     task_id = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
     println("SLURM_ARRAY_TASK_ID found with ", task_id)
 else
-    task_id = 5
+    task_id = 9999
 end
 
-println("task_id: ", task_id)
 
-# function calibrate(m)
+function calibrate(m)
     
-#     setup_power_grids(m)
-#     println("m grids setup")
-#     setup_income(m)
-#     println("m income setup")
+    setup_power_grids(m)
+    println("m grids setup")
+    setup_income(m)
+    println("m income setup")
     
-#     call = 0
-#     function fitness(b)
-#         call += 1
-#         println("fitness call: ", call)
-#         m.beta0 = b
+    call = 0
+    function fitness(b)
+        call += 1
+        println("fitness call: ", call)
+        m.beta0 = b
 
-#         solve_EGP(m)
+        solve_EGP(m)
 
-#         setup_inter_trans(m)
-#         setup_full_trans(m)
+        setup_inter_trans(m)
+        setup_full_trans(m)
 
-#         find_statdist(m)
-#         find_adist(m)
+        find_statdist(m)
+        find_adist(m)
 
-#         return mean_wealth(m) - m.target_mean_wealth
-#     end
+        return mean_wealth(m) - m.target_mean_wealth
+    end
 
-#     println("lower: ", fitness(0.97))
-#     println("upper: ",fitness(0.99))
-#     # op = optimize(fitness, 0.92, 0.99)
-#     return find_zero(fitness, (0.9, 0.99), Bisection())
-# end
+    println("lower: ", fitness(0.97))
+    println("upper: ",fitness(0.99))
+    # op = optimize(fitness, 0.92, 0.99)
+    return find_zero(fitness, (0.9, 0.99), Bisection())
+end
 
+println("task_id (now creates calibrate fn): ", task_id)
 
 # m0 = ModelDiscrete(na = task_id)
 # println("m0 created with ", m0.na, " size agrid")
