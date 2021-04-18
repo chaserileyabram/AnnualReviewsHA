@@ -51,9 +51,9 @@ function calibrate(m)
         # find_adist(m)
         println("adist found")
 
-        return 99999
+        # return 99999
 
-        # return mean_wealth(m) - m.target_mean_wealth
+        return mean_wealth(m) - m.target_mean_wealth
     end
 
     println("lower: ", fitness(0.97))
