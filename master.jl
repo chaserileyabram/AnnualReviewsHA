@@ -60,9 +60,9 @@ function calibrate(m)
     println("upper: ",fitness(0.99))
     # op = optimize(fitness, 0.92, 0.99)
 
-    return fitness(0.98)
+    # return fitness(0.98)
 
-    # return find_zero(fitness, (0.9, 0.99), Bisection())
+    return find_zero(fitness, (0.97, 0.99), Bisection())
 end
 
 println("task_id (now creates calibrate fn): ", task_id)
