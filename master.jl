@@ -41,8 +41,10 @@ function calibrate(m)
         solve_EGP(m)
         println("EGP solved")
 
-        # setup_inter_trans(m)
-        # setup_full_trans(m)
+        setup_inter_trans(m)
+        println("inter_trans setup")
+        setup_full_trans(m)
+        println("full_trans setup")
 
         # find_statdist(m)
         # find_adist(m)
