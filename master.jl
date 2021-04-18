@@ -57,8 +57,8 @@ end
 
 println("task_id (now creates calibrate fn): ", task_id)
 
-# m0 = ModelDiscrete(na = task_id)
-# println("m0 created with ", m0.na, " size agrid")
+m0 = ModelDiscrete(na = task_id)
+println("m0 created with ", m0.na, " size agrid")
 
 # println("cal: ", calibrate(m0))
 
