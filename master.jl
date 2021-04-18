@@ -18,7 +18,8 @@ include("mpc.jl")
 
 # Get task id from slurm
 if "SLURM_ARRAY_TASK_ID" in keys(ENV)
-    task_id = ENV["SLURM_ARRAY_TASK_ID"]
+    task_id = parse(Int64, ENV["SLURM_ARRAY_TASK_ID"])
+    println("SLURM_ARRAY_TASK_ID found with ", task_id)
 else
     task_id = 20
 end
