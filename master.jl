@@ -46,10 +46,12 @@ function calibrate(m)
         setup_full_trans(m)
         println("full_trans setup")
 
-        # find_statdist(m)
+        find_statdist(m)
+        println("statdist found")
         # find_adist(m)
+        println("adist found")
 
-        return 999
+        return 99999
 
         # return mean_wealth(m) - m.target_mean_wealth
     end
