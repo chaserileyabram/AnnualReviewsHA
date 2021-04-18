@@ -39,17 +39,17 @@ function calibrate(m)
         m.beta0 = b
 
         solve_EGP(m)
-        println("EGP solved")
+        # println("EGP solved")
 
         setup_inter_trans(m)
-        println("inter_trans setup")
+        # println("inter_trans setup")
         setup_full_trans(m)
-        println("full_trans setup")
+        # println("full_trans setup")
 
         find_statdist(m)
-        println("statdist found")
+        # println("statdist found")
         # find_adist(m)
-        println("adist found")
+        # println("adist found")
 
         # return 99999
 
