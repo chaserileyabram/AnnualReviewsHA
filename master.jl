@@ -52,7 +52,10 @@ function calibrate(m)
     println("lower: ", fitness(0.97))
     println("upper: ",fitness(0.99))
     # op = optimize(fitness, 0.92, 0.99)
-    return find_zero(fitness, (0.9, 0.99), Bisection())
+
+    return fitness(0.98)
+
+    # return find_zero(fitness, (0.9, 0.99), Bisection())
 end
 
 println("task_id (now creates calibrate fn): ", task_id)
@@ -64,7 +67,7 @@ println("m0 grids setup")
 setup_income(m0)
 println("m0 income setup")
 
-# println("cal: ", calibrate(m0))
+println("cal: ", calibrate(m0))
 
 # println("m0 mean wealth target: ", m0.target_mean_wealth)
 # println("calibrated mean wealth: ", mean_wealth(m0))
