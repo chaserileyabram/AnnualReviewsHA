@@ -120,6 +120,8 @@ function split_a_tom(m, ap)
     # Different weights are used for on grid, 
     # above max, and above min, purely for diagnostics
 
+    # println("ap: ", ap)
+    
     # Just use if on grid
     if ap in m.agrid
         m.lb = ap

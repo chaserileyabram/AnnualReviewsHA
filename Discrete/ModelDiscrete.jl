@@ -25,7 +25,7 @@ using Roots
     name = "default"
 
     # Description
-    descr = "default model"
+    descr = "default discrete model"
 
     # Mean annual income in dollars
     numeraire_in_dollars = 72000
@@ -42,7 +42,7 @@ using Roots
     crra = 1 # 0 means Epstein-Zin
 
     # Interest Rate
-    r = 0.01
+    r = 0.02
     R = 1+r
 
     # Build grids
@@ -50,7 +50,7 @@ using Roots
     # Borrowing constraint
     a_bc = 0
     # Max assets
-    a_max = 200
+    a_max = 500
     # Shape for power spacing
     a_shape = 0.15
     # Asset grid (not set up)
@@ -68,19 +68,19 @@ using Roots
     # Income
     # Fixed
     nyF = 2
-    yFgrid::Array{Float64,1} = exp.(LinRange(0.0,.0,nyF))
+    yFgrid::Array{Float64,1} = exp.(LinRange(0.0,0.0,nyF))
     yFtrans = Matrix{Float64}(I,nyF,nyF)
 
     # Persistent
-    nyP = 4
-    yP_sd = 0.1
-    yP_rho = 0.0
+    nyP = 2
+    yP_sd = sqrt(0.01080)
+    yP_rho = 0.9881
     yPgrid::Array{Float64,1} = exp.(rouwenhorst(nyP, -(yP_sd^2)/2,yP_sd, yP_rho)[1])
     yPtrans = rouwenhorst(nyP, -(yP_sd^2)/2,yP_sd, yP_rho)[2]
 
     # Transitory
-    nyT = 4
-    yT_sd = 0.2
+    nyT = 2
+    yT_sd = sqrt(0.2087)
     yTgrid::Array{Float64,1} = exp.(match_normal(nyT, 0, yT_sd)[2])
     yTtrans = repeat(reshape(match_normal(nyT, 0, yT_sd)[3], (1,nyT)), nyT)
 
@@ -228,15 +228,30 @@ function interp_a_tom(m)
                 for bh in 1:m.nbh
                     # Find where borrowing constrained
                     m.borrow_constr = (m.agrid .< m.a_euler[1,yF,yP,yT,bh])
+                    # println("m.borrow_constr: ", m.borrow_constr)
                     # Build interpolating function (just linear)
                     m.tmp_itp = interpolate((m.a_euler[:,yF,yP,yT,bh],), m.agrid, Gridded(Linear()))
+                    # println("extrapolated term: ", sum(isnan.(extrapolate(m.tmp_itp, Interpolations.Flat()).(m.agrid))))
+                    
                     # Use interpolation to invert
                     m.a_tom[:,yF,yP,yT,bh] = (1 .- m.borrow_constr) .* extrapolate(m.tmp_itp, Line()).(m.agrid) .+ m.borrow_constr .* m.agrid[1]
+                    # if isnan.(m.a_tom[100,yF,yP,yT,bh])
+                    #     # println("NaN at m.a_tom[100,",yF, ",",yP,",",yT,",",bh,"]")
+                    # end
                 end
             end
         end
     end
 end
+
+# function kill_nan(m,z)
+#     if isnan(z)
+#         return 9999
+#     else
+#         return m.a_bc
+#     end
+# end
+
 
 # Update consumption (need a_tom updated)
 function update_con(m)
